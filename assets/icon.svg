@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Qiaomu Tab icon">
+  <defs>
+    <linearGradient id="leaf" x1="25" y1="18" x2="101" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#81d8bd"/>
+      <stop offset="1" stop-color="#146c5f"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="36" y1="32" x2="95" y2="99" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffdf8"/>
+      <stop offset="1" stop-color="#e7dfd1"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#123f39"/>
+  <path d="M30 84C31 48 52 25 96 22C98 63 77 92 36 101C32 96 30 91 30 84Z" fill="url(#leaf)"/>
+  <path d="M43 44H90C94.4 44 98 47.6 98 52V92C98 96.4 94.4 100 90 100H43C38.6 100 35 96.4 35 92V52C35 47.6 38.6 44 43 44Z" fill="url(#paper)"/>
+  <path d="M47 60H86M47 72H80M47 84H70" fill="none" stroke="#146c5f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M64 23C73 38 70 56 55 73" fill="none" stroke="#f5f0e7" stroke-width="6" stroke-linecap="round"/>
+</svg>

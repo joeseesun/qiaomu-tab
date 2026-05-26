@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>乔木插件</title>
+    <link rel="icon" href="assets/icon32.png" type="image/png">
+    <link rel="stylesheet" href="newtab.css">
+  </head>
+  <body>
+    <main class="canvas">
+      <div class="grain" aria-hidden="true"></div>
+
+      <section class="hero" aria-label="新标签页">
+        <div class="day-row">
+          <p id="dayLine" class="day-line">今天</p>
+          <button id="focusToggle" class="focus-toggle" type="button" aria-label="番茄钟">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="7"></circle>
+              <path d="M12 8v4l2.5 2.5"></path>
+              <path d="M9 3h6"></path>
+            </svg>
+          </button>
+          <button id="noteCreateButton" class="focus-toggle note-toggle" type="button" aria-label="新建便签">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 4h9l3 3v13H6z"></path>
+              <path d="M14 4v4h4"></path>
+              <path d="M9 12h6"></path>
+              <path d="M9 16h4"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="clockFace" class="clock-face">
+          <h1 id="timeLine">00:00</h1>
+        </div>
+        <div id="focusFace" class="focus-face" hidden>
+          <div id="homePomodoroTime" class="home-pomodoro-time">25:00</div>
+          <div class="home-pomodoro-tools">
+            <div class="pomodoro-modes" aria-label="番茄钟模式">
+              <button class="is-active" type="button" data-pomodoro-mode="focus">25</button>
+              <button type="button" data-pomodoro-mode="break">5</button>
+            </div>
+            <button id="homePomodoroStart" class="round-tool" type="button" aria-label="开始或暂停">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+            </button>
+            <button id="homePomodoroReset" class="round-tool" type="button" aria-label="重置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2-5"></path><path d="M5 4v5h5"></path></svg>
+            </button>
+          </div>
+        </div>
+        <p id="momentLine" class="moment-line" aria-live="polite">把常用入口留在安静处。</p>
+
+        <form id="searchForm" class="command" role="search" autocomplete="off">
+          <label class="sr-only" for="globalSearch">搜索网址或历史</label>
+          <div id="siteSearchPill" class="site-search-pill" hidden>
+            <span id="siteSearchLabel">站内搜索</span>
+            <button id="clearSiteSearch" type="button" aria-label="退出站内搜索">×</button>
+          </div>
+          <div class="search-provider">
+            <button id="searchProviderButton" class="search-provider-button" type="button" aria-label="切换搜索引擎" aria-haspopup="true" aria-expanded="false">
+            </button>
+            <div id="searchProviderMenu" class="search-provider-menu" hidden></div>
+          </div>
+          <input id="globalSearch" type="text" placeholder="搜索网址、历史或收藏" autocomplete="off" autofocus>
+          <div id="searchPanel" class="search-panel" hidden>
+            <div id="searchTabHint" class="search-tab-hint" hidden></div>
+            <div id="searchResults" class="search-results" role="listbox"></div>
+          </div>
+        </form>
+        <section id="todoHome" class="todo-home" aria-label="今日待办">
+          <form id="todoForm" class="todo-form">
+            <label class="sr-only" for="todoInput">添加待办</label>
+            <input id="todoInput" type="text" placeholder="写下一件事" autocomplete="off" maxlength="120">
+            <button id="todoArchiveButton" class="todo-archive-button" type="button" aria-label="查看最近完成的待办"></button>
+          </form>
+          <div id="todoList" class="todo-list" aria-live="polite"></div>
+        </section>
+        <section id="quickSites" class="quick-sites" aria-label="自定义网站">
+          <div id="quickSiteRail" class="quick-site-rail" aria-live="polite"></div>
+          <div id="quickSiteDots" class="quick-site-dots" aria-hidden="true"></div>
+        </section>
+      </section>
+    </main>
+
+    <section id="notesLayer" class="notes-layer" aria-label="便签"></section>
+
+    <button id="weatherEdge" class="weather-edge" type="button" aria-label="打开天气"></button>
+    <aside id="weatherDrawer" class="weather-drawer" aria-label="天气" aria-hidden="true">
+      <div class="drawer-head weather-drawer-head">
+        <div>
+          <p>天气</p>
+          <span id="weatherSummary">关注地区</span>
+        </div>
+        <button id="closeWeatherButton" class="drawer-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <section class="weather-panel">
+        <form id="weatherSearchForm" class="weather-search">
+          <label class="sr-only" for="weatherCitySearch">添加地区</label>
+          <input id="weatherCitySearch" type="search" placeholder="搜索城市、区县或 adcode" autocomplete="off">
+        </form>
+        <div id="weatherCityResults" class="weather-city-results" aria-live="polite"></div>
+        <div id="weatherCards" class="weather-cards" aria-live="polite"></div>
+      </section>
+    </aside>
+
+    <button id="drawerEdge" class="drawer-edge" type="button" aria-label="打开侧栏"></button>
+    <aside id="recentDrawer" class="recent-drawer" aria-label="侧栏" aria-hidden="true">
+      <div class="drawer-head">
+        <button id="closeRecentButton" class="drawer-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <nav class="drawer-tabs" aria-label="侧栏视图">
+        <button class="drawer-tab" type="button" data-drawer-tab="recent">最近访问</button>
+        <button class="drawer-tab is-active" type="button" data-drawer-tab="bookmarks">收藏夹</button>
+        <button class="drawer-tab" type="button" data-drawer-tab="settings">设置</button>
+      </nav>
+      <section id="historyPanel" class="drawer-panel" data-panel="recent">
+        <div class="drawer-section-head">
+          <h2>最近访问</h2>
+          <span>72 小时</span>
+        </div>
+        <label class="drawer-search">
+          <span class="sr-only">搜索最近访问</span>
+          <input id="recentSearch" type="search" placeholder="搜索最近访问" autocomplete="off">
+        </label>
+        <div id="historyGroups" class="trace-list" aria-live="polite"></div>
+      </section>
+      <section id="bookmarksPanel" class="drawer-panel is-active" data-panel="bookmarks">
+        <div class="drawer-section-head">
+          <h2>收藏夹</h2>
+          <span id="bookmarkSummary">浏览器收藏</span>
+        </div>
+        <label class="drawer-search">
+          <span class="sr-only">搜索收藏夹</span>
+          <input id="bookmarkSearch" type="search" placeholder="搜索收藏夹" autocomplete="off">
+        </label>
+        <div id="bookmarkList" class="bookmark-list" aria-live="polite"></div>
+      </section>
+
+      <form id="settingsPanel" class="settings-panel drawer-panel" data-panel="settings">
+        <h2>设置</h2>
+        <section class="setting-block">
+          <p>语言</p>
+          <div class="choice-grid language-grid" data-setting="language">
+            <button type="button" data-value="auto">跟随浏览器</button>
+            <button type="button" data-value="zh">中文</button>
+            <button type="button" data-value="en">English</button>
+          </div>
+        </section>
+        <section class="setting-block">
+          <p>搜索</p>
+          <div class="choice-grid" data-setting="searchEngine">
+            <button type="button" data-value="google">Google</button>
+            <button type="button" data-value="chatgpt">ChatGPT</button>
+            <button type="button" data-value="doubao">豆包</button>
+            <button type="button" data-value="kimi">Kimi</button>
+            <button type="button" data-value="baidu">百度</button>
+            <button type="button" data-value="bing">Bing</button>
+            <button type="button" data-value="duckduckgo">DuckDuckGo</button>
+            <button type="button" data-value="todo">Todo</button>
+          </div>
+        </section>
+        <section class="setting-block">
+          <p>模块</p>
+          <div class="toggle-grid">
+            <button id="showTodos" type="button" data-toggle="showTodos">待办</button>
+            <button id="showCustomLinks" type="button" data-toggle="showCustomLinks">自定义收藏</button>
+          </div>
+        </section>
+        <section class="setting-block">
+          <p>壁纸</p>
+          <div class="wallpaper-grid" data-setting="wallpaper">
+            <button type="button" data-value="none">
+              <span class="wallpaper-swatch wallpaper-none"></span>
+              默认
+            </button>
+            <button type="button" data-value="mist">
+              <span class="wallpaper-swatch wallpaper-mist"></span>
+              海雾
+            </button>
+            <button type="button" data-value="dune">
+              <span class="wallpaper-swatch wallpaper-dune"></span>
+              暖沙
+            </button>
+            <button type="button" data-value="rain">
+              <span class="wallpaper-swatch wallpaper-rain"></span>
+              雨窗
+            </button>
+            <button type="button" data-value="blue">
+              <span class="wallpaper-swatch wallpaper-blue"></span>
+              夜色
+            </button>
+          </div>
+        </section>
+        <section class="setting-block">
+          <p>外观</p>
+          <div class="choice-grid" data-setting="theme">
+            <button type="button" data-value="light">浅色</button>
+            <button type="button" data-value="dark">深色</button>
+          </div>
+        </section>
+        <section class="setting-block">
+          <p>好句</p>
+          <div class="choice-grid" data-setting="showQuote">
+            <button id="showQuoteOn" type="button" data-value="true">开</button>
+            <button id="showQuoteOff" type="button" data-value="false">关</button>
+          </div>
+        </section>
+        <section class="setting-block">
+          <p>同步</p>
+          <div class="settings-row">
+            <span>本地优先</span>
+            <span class="settings-pill">待接入</span>
+          </div>
+        </section>
+      </form>
+    </aside>
+    <div id="drawerScrim" class="drawer-scrim" hidden></div>
+
+    <div id="commandPalette" class="command-palette" hidden>
+      <div class="command-backdrop"></div>
+      <section class="command-menu" role="dialog" aria-modal="true" aria-label="命令面板">
+        <label class="command-search">
+          <span class="sr-only">命令搜索</span>
+          <input id="commandInput" type="text" placeholder="搜索命令、收藏、最近访问" autocomplete="off">
+          <kbd>⌘K</kbd>
+        </label>
+        <div id="commandResults" class="command-results" role="listbox"></div>
+      </section>
+    </div>
+
+    <dialog id="linkDialog" class="link-dialog">
+      <form id="linkForm" method="dialog" class="dialog-card">
+        <div class="dialog-header">
+          <h2 id="dialogTitle">添加网址</h2>
+          <button class="icon-button" type="button" id="closeDialogButton" aria-label="关闭">×</button>
+        </div>
+        <div id="linkDialogTabs" class="dialog-tabs" role="tablist" aria-label="添加方式">
+          <button class="is-active" type="button" data-link-dialog-tab="manual" role="tab" aria-selected="true">手动填写</button>
+          <button type="button" data-link-dialog-tab="popular" role="tab" aria-selected="false">常用网站</button>
+        </div>
+        <input type="hidden" id="linkId">
+        <section class="link-dialog-panel is-active" data-link-dialog-panel="manual">
+          <label>
+            名称
+            <input id="linkTitle" required maxlength="48" placeholder="例如：Notion">
+          </label>
+          <label>
+            网址
+            <input id="linkUrl" required type="url" placeholder="https://example.com">
+          </label>
+          <label>
+            分组
+            <input id="linkGroup" required maxlength="24" placeholder="例如：工作">
+          </label>
+          <div class="dialog-actions">
+            <button id="deleteLinkButton" class="ghost danger" type="button">删除</button>
+            <div>
+              <button class="ghost" type="button" id="cancelDialogButton">取消</button>
+              <button class="primary" type="submit">保存</button>
+            </div>
+          </div>
+        </section>
+        <section class="link-dialog-panel" data-link-dialog-panel="popular">
+          <div id="popularSiteList" class="popular-site-list" aria-live="polite"></div>
+        </section>
+      </form>
+    </dialog>
+
+    <dialog id="todoArchiveDialog" class="link-dialog">
+      <section class="dialog-card todo-archive-card" aria-label="最近完成的待办">
+        <div class="dialog-header">
+          <h2>最近完成</h2>
+          <button class="icon-button" type="button" id="closeTodoArchiveButton" aria-label="关闭">×</button>
+        </div>
+        <div id="todoArchiveList" class="todo-archive-list" aria-live="polite"></div>
+      </section>
+    </dialog>
+
+    <script src="assets/note-editor.bundle.js?v=1"></script>
+    <script src="newtab.js"></script>
+  </body>
+</html>

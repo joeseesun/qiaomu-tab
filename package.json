@@ -1,0 +1,17 @@
+{
+  "name": "qiaomu-tab",
+  "version": "0.1.0",
+  "description": "A calm, local-first Chrome MV3 new tab dashboard.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build:notes": "esbuild src/note-editor.js --bundle --format=iife --outfile=assets/note-editor.bundle.js"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.12.0",
+    "@tiptap/starter-kit": "^2.12.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

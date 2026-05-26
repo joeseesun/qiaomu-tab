@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "乔木插件",
+    "description": "中文 Chrome 界面中显示的扩展名称。"
+  },
+  "extensionShortName": {
+    "message": "乔木插件",
+    "description": "空间有限时显示的中文扩展短名称。"
+  },
+  "extensionDescription": {
+    "message": "一个专注的新标签页插件，支持自定义收藏、待办、天气、便签和最近访问。",
+    "description": "中文 Chrome 界面中显示的扩展描述。"
+  },
+  "actionDefaultTitle": {
+    "message": "打开乔木插件",
+    "description": "中文 Chrome 界面中的工具栏提示。"
+  }
+}
