@@ -92,6 +92,7 @@
       namePlaceholder: "例如：Notion",
       groupPlaceholder: "例如：工作",
       recentCompleted: "最近完成",
+      completed: "已完成",
       noCompletedTodos: "还没有完成的待办。",
       markUndone: "标记未完成",
       markDone: "标记完成",
@@ -281,6 +282,7 @@
       namePlaceholder: "For example: Notion",
       groupPlaceholder: "For example: Work",
       recentCompleted: "Recently Completed",
+      completed: "Completed",
       noCompletedTodos: "No completed todos yet.",
       markUndone: "Mark incomplete",
       markDone: "Mark complete",
@@ -1523,7 +1525,7 @@
   async function restoreTodo(id) {
     const activeCount = state.todos.items.filter((todo) => !todo.done && !todo.archived).length;
     if (activeCount >= todoLimit) {
-      showToast("不要高估自己。");
+      showToast(t("tooManyTodos"));
       return;
     }
     const item = state.todos.items.find((todo) => todo.id === id);
@@ -1552,9 +1554,9 @@
   function formatTodoCompletedAt(todo) {
     const time = todo.completedAt || todo.updatedAt || todo.createdAt;
     if (!time) {
-      return "已完成";
+      return t("completed");
     }
-    return new Intl.DateTimeFormat("zh-CN", {
+    return new Intl.DateTimeFormat(getLocaleCode(), {
       month: "numeric",
       day: "numeric",
       hour: "2-digit",
