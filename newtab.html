@@ -75,6 +75,10 @@
           </form>
           <div id="todoList" class="todo-list" aria-live="polite"></div>
         </section>
+        <section id="musicWidget" class="music-widget" aria-label="乔木音乐" hidden>
+          <div id="musicPlayer" class="music-player" aria-live="polite"></div>
+          <audio id="musicAudio" preload="metadata" crossorigin="anonymous"></audio>
+        </section>
         <section id="quickSites" class="quick-sites" aria-label="自定义网站">
           <div id="quickSiteRail" class="quick-site-rail" aria-live="polite"></div>
           <div id="quickSiteDots" class="quick-site-dots" aria-hidden="true"></div>
@@ -163,6 +167,7 @@
           <p>模块</p>
           <div class="toggle-grid">
             <button id="showTodos" type="button" data-toggle="showTodos">待办</button>
+            <button id="showMusicWidget" type="button" data-toggle="showMusicWidget">音乐</button>
             <button id="showCustomLinks" type="button" data-toggle="showCustomLinks">自定义收藏</button>
           </div>
         </section>

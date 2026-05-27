@@ -1038,6 +1038,161 @@ p {
   border-radius: 999px;
 }
 
+.music-widget {
+  width: min(600px, 100%);
+  margin-top: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 12px 34px rgba(43, 37, 27, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.music-player {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  align-items: center;
+}
+
+.music-cover {
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #d8b46a, #8fb8c8 54%, #b88974);
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.music-cover-fallback {
+  display: grid;
+  place-items: center;
+  color: rgba(22, 27, 24, 0.72);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 850;
+}
+
+.music-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.music-kicker,
+.music-artist,
+.music-time {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-title {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.music-control {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  border-radius: 999px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.music-play {
+  color: var(--paper);
+  background: var(--accent);
+}
+
+.music-seek {
+  grid-column: 2 / 3;
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.music-time {
+  justify-self: end;
+}
+
+.music-lyrics {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2px;
+  max-height: 58px;
+  overflow: auto;
+  padding: 2px 2px 0;
+  scrollbar-width: none;
+}
+
+.music-lyrics::-webkit-scrollbar {
+  display: none;
+}
+
+.music-lyric {
+  margin: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--muted) 78%, transparent);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.music-lyric.is-active {
+  color: var(--ink);
+  transform: translateX(4px);
+}
+
+.music-empty {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+.music-link {
+  color: var(--ink);
+  font-weight: 750;
+}
+
+:root[data-theme="dark"] .music-widget {
+  background: rgba(11, 14, 10, 0.72);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+}
+
+:root[data-theme="dark"] .music-play {
+  color: #080a07;
+}
+
 .todo-item {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 28px;
@@ -2835,7 +2990,8 @@ kbd {
     padding: 4vh 0 36px;
   }
 
-  .todo-home {
+  .todo-home,
+  .music-widget {
     margin-bottom: 22px;
   }
 
@@ -2897,6 +3053,25 @@ kbd {
 
   .popular-site-list {
     grid-template-columns: 1fr;
+  }
+
+  .music-player {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .music-cover {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .music-controls {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+
+  .music-seek {
+    grid-column: 1 / 2;
   }
 
   .command input {

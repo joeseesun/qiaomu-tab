@@ -12,6 +12,7 @@
   const quoteStorageKey = "qiamuTabQuote";
   const notesStorageKey = "qiamuTabNotes";
   const weatherStorageKey = "qiamuTabWeather";
+  const musicApiBase = "https://music.qiaomu.ai";
   const amapWeatherKey = "856e4f19ded88246c86f3aff712bb0e7";
   const amapCityAsset = "assets/amap-cities.json";
   const genericWeChatTitles = new Set(["公众号", "微信公众平台", "wechat"]);
@@ -22,6 +23,7 @@
     wallpaper: "none",
     showQuote: true,
     showTodos: true,
+    showMusicWidget: true,
     showCustomLinks: true,
     recentLimit: 5
   };
@@ -75,6 +77,14 @@
       exitSiteSearch: "退出站内搜索",
       switchSearchEngine: "切换搜索引擎",
       todayTodo: "今日待办",
+      qiaomuMusic: "乔木音乐",
+      music: "音乐",
+      musicLoading: "正在连接乔木音乐。",
+      musicUnavailable: "音乐暂时不可用",
+      noMusicTracks: "还没有公开歌曲。",
+      openMusicSite: "打开音乐站",
+      previousTrack: "上一首",
+      nextTrack: "下一首",
       addTodo: "添加待办",
       todoPlaceholder: "写下一件事",
       completedTodos: "查看最近完成的待办",
@@ -265,6 +275,14 @@
       exitSiteSearch: "Exit site search",
       switchSearchEngine: "Switch search engine",
       todayTodo: "Today todos",
+      qiaomuMusic: "Qiaomu Music",
+      music: "Music",
+      musicLoading: "Connecting to Qiaomu Music.",
+      musicUnavailable: "Music is unavailable",
+      noMusicTracks: "No published tracks yet.",
+      openMusicSite: "Open music site",
+      previousTrack: "Previous track",
+      nextTrack: "Next track",
       addTodo: "Add todo",
       todoPlaceholder: "Write one thing",
       completedTodos: "View recently completed todos",
@@ -582,6 +600,15 @@
       error: "",
       updatedAt: 0
     },
+    music: {
+      tracks: [],
+      activeIndex: 0,
+      activeLine: 0,
+      loading: false,
+      loaded: false,
+      error: "",
+      isPlaying: false
+    },
     pomodoro: {
       mode: "focus",
       running: false,
@@ -616,6 +643,9 @@
     siteSearchLabel: document.querySelector("#siteSearchLabel"),
     clearSiteSearch: document.querySelector("#clearSiteSearch"),
     quickSites: document.querySelector("#quickSites"),
+    musicWidget: document.querySelector("#musicWidget"),
+    musicPlayer: document.querySelector("#musicPlayer"),
+    musicAudio: document.querySelector("#musicAudio"),
     notesLayer: document.querySelector("#notesLayer"),
     quickSiteRail: document.querySelector("#quickSiteRail"),
     quickSiteDots: document.querySelector("#quickSiteDots"),
@@ -742,6 +772,7 @@
     setText("label[for='todoInput'] .sr-only, label[for='todoInput']", "addTodo");
     setAttr("#todoInput", "placeholder", "todoPlaceholder");
     setAttr("#todoArchiveButton", "aria-label", "completedTodos");
+    setAttr("#musicWidget", "aria-label", "qiaomuMusic");
     setAttr("#quickSites", "aria-label", "customSites");
     setAttr("#notesLayer", "aria-label", "notes");
     setAttr("#weatherEdge", "aria-label", "openWeather");
@@ -777,6 +808,7 @@
     if (languageButtons[1]) languageButtons[1].textContent = t("chinese");
     if (languageButtons[2]) languageButtons[2].textContent = t("english");
     document.querySelector("#showTodos").textContent = t("addTodo").replace(/^添加\s*/, "");
+    document.querySelector("#showMusicWidget").textContent = t("music");
     document.querySelector("#showCustomLinks").textContent = t("customSites");
     const themeButtons = document.querySelectorAll("[data-setting='theme'] button");
     if (themeButtons[0]) themeButtons[0].textContent = t("themeLight");
@@ -885,6 +917,9 @@
     }
     if (typeof state.settings.showQuote !== "boolean") {
       state.settings.showQuote = true;
+    }
+    if (typeof state.settings.showMusicWidget !== "boolean") {
+      state.settings.showMusicWidget = true;
     }
     if (typeof state.settings.showCustomLinks !== "boolean") {
       state.settings.showCustomLinks = true;
@@ -1233,6 +1268,51 @@
     }
   }
 
+  function formatMusicTime(value) {
+    if (!Number.isFinite(value)) return "0:00";
+    const minutes = Math.floor(value / 60);
+    const seconds = Math.floor(value % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  }
+
+  function parseLrcTime(raw) {
+    const match = /^(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?$/.exec(raw);
+    if (!match) return null;
+    const fraction = match[3] ? Number(`0.${match[3].padEnd(3, "0").slice(0, 3)}`) : 0;
+    return Number(match[1]) * 60 + Number(match[2]) + fraction;
+  }
+
+  function parseMusicLyrics(lyrics = "") {
+    const lines = [];
+    String(lyrics || "").split(/\r?\n/).forEach((rawLine, index) => {
+      const trimmed = rawLine.trim();
+      if (!trimmed) return;
+      const stamps = [...trimmed.matchAll(/\[([0-9]{1,2}:[0-9]{2}(?:[.:][0-9]{1,3})?)\]/g)]
+        .map((match) => parseLrcTime(match[1]))
+        .filter((value) => value !== null);
+      const text = trimmed.replace(/\[[^\]]+\]/g, "").trim();
+      if (!text && stamps.length) return;
+      if (stamps.length) {
+        stamps.forEach((stamp) => lines.push({ id: `${index}-${stamp}-${text}`, text, time: stamp }));
+        return;
+      }
+      lines.push({ id: `${index}-${trimmed}`, text: trimmed });
+    });
+    return lines.sort((a, b) => (a.time ?? Number.MAX_SAFE_INTEGER) - (b.time ?? Number.MAX_SAFE_INTEGER));
+  }
+
+  function getActiveMusicLine(lines, time, duration) {
+    if (!lines.length) return 0;
+    if (lines.some((line) => typeof line.time === "number")) {
+      let active = 0;
+      lines.forEach((line, index) => {
+        if (typeof line.time === "number" && line.time <= time + 0.08) active = index;
+      });
+      return active;
+    }
+    return duration ? Math.max(0, Math.min(lines.length - 1, Math.floor((time / duration) * lines.length))) : 0;
+  }
+
   function createElement(tagName, className, textContent) {
     const element = document.createElement(tagName);
     if (className) {
@@ -1390,6 +1470,221 @@
       item.append(check, text, action);
       elements.todoList.append(item);
     });
+  }
+
+  function getActiveMusicTrack() {
+    return state.music.tracks[state.music.activeIndex];
+  }
+
+  async function loadMusicTracks(force = false) {
+    if (!state.settings.showMusicWidget || state.music.loading || (state.music.loaded && !force)) {
+      return;
+    }
+    state.music.loading = true;
+    state.music.error = "";
+    renderMusicWidget();
+    try {
+      const response = await fetch(`${musicApiBase}/api/public/tracks`, { cache: "no-store" });
+      if (!response.ok) throw new Error("music_unavailable");
+      const data = await response.json();
+      state.music.tracks = Array.isArray(data.tracks) ? data.tracks : [];
+      state.music.activeIndex = Math.min(state.music.activeIndex, Math.max(0, state.music.tracks.length - 1));
+      state.music.loaded = true;
+      await hydrateActiveMusicTrack();
+    } catch {
+      state.music.error = t("musicUnavailable");
+    } finally {
+      state.music.loading = false;
+      renderMusicWidget();
+    }
+  }
+
+  async function hydrateActiveMusicTrack() {
+    const track = getActiveMusicTrack();
+    if (!track || track.lyricLines || track.lyricsLoaded) {
+      return;
+    }
+    try {
+      const response = await fetch(track.apiUrl || `${musicApiBase}/api/public/tracks/${encodeURIComponent(track.id)}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json();
+      const detail = data.track || {};
+      Object.assign(track, detail, {
+        lyricLines: Array.isArray(detail.lyricLines) ? detail.lyricLines : parseMusicLyrics(detail.lyrics || ""),
+        lyricsLoaded: true
+      });
+    } catch {
+      track.lyricsLoaded = true;
+      track.lyricLines = [];
+    }
+  }
+
+  function renderMusicWidget() {
+    if (!elements.musicWidget || !elements.musicPlayer) {
+      return;
+    }
+    const visible = Boolean(state.settings.showMusicWidget);
+    elements.musicWidget.hidden = !visible;
+    if (!visible) {
+      elements.musicAudio.pause();
+      return;
+    }
+    elements.musicPlayer.replaceChildren();
+
+    if (state.music.loading) {
+      elements.musicPlayer.append(createElement("p", "music-empty", t("musicLoading")));
+      return;
+    }
+    if (state.music.error) {
+      const empty = createElement("div", "music-empty");
+      empty.append(createElement("strong", "", state.music.error));
+      const link = createElement("a", "music-link", t("openMusicSite"));
+      link.href = musicApiBase;
+      empty.append(link);
+      elements.musicPlayer.append(empty);
+      return;
+    }
+    const track = getActiveMusicTrack();
+    if (!track) {
+      elements.musicPlayer.append(createElement("p", "music-empty", t("noMusicTracks")));
+      return;
+    }
+
+    const cover = track.coverUrl ? createElement("img", "music-cover") : createElement("div", "music-cover music-cover-fallback");
+    if (track.coverUrl) {
+      cover.src = track.coverUrl;
+      cover.alt = "";
+    } else {
+      cover.textContent = (track.title || "QM").slice(0, 2).toUpperCase();
+    }
+
+    const copy = createElement("div", "music-copy");
+    copy.append(createElement("span", "music-kicker", t("qiaomuMusic")));
+    copy.append(createElement("strong", "music-title", track.title || t("qiaomuMusic")));
+    copy.append(createElement("span", "music-artist", [track.artist, track.album || track.source].filter(Boolean).join(" · ")));
+
+    const controls = createElement("div", "music-controls");
+    const prev = createElement("button", "music-control", "‹");
+    const play = createElement("button", "music-control music-play", state.music.isPlaying ? "||" : "▶");
+    const next = createElement("button", "music-control", "›");
+    prev.type = play.type = next.type = "button";
+    prev.setAttribute("aria-label", t("previousTrack"));
+    play.setAttribute("aria-label", t("startOrPause"));
+    next.setAttribute("aria-label", t("nextTrack"));
+    prev.dataset.musicAction = "prev";
+    play.dataset.musicAction = "toggle";
+    next.dataset.musicAction = "next";
+    controls.append(prev, play, next);
+
+    const seek = createElement("input", "music-seek");
+    seek.type = "range";
+    seek.min = "0";
+    seek.max = "1000";
+    seek.value = "0";
+    seek.setAttribute("aria-label", "播放进度");
+    seek.dataset.musicAction = "seek";
+
+    const time = createElement("span", "music-time", "0:00");
+    const lyrics = createElement("div", "music-lyrics");
+    renderMusicLyrics(lyrics, track.lyricLines || []);
+
+    elements.musicPlayer.append(cover, copy, controls, seek, time, lyrics);
+    syncMusicAudio(false);
+    updateMusicProgress();
+  }
+
+  function renderMusicLyrics(container, lines) {
+    const visibleLines = lines.length ? lines : [{ text: "..." }];
+    visibleLines.slice(0, 18).forEach((line, index) => {
+      const item = createElement("p", `music-lyric${index === state.music.activeLine ? " is-active" : ""}`, line.text);
+      item.dataset.index = String(index);
+      container.append(item);
+    });
+  }
+
+  function syncMusicAudio(autoplay) {
+    const audio = elements.musicAudio;
+    const track = getActiveMusicTrack();
+    if (!audio || !track?.audioUrl) {
+      return;
+    }
+    if (audio.src !== track.audioUrl) {
+      audio.src = track.audioUrl;
+      audio.load();
+    }
+    if (autoplay) {
+      audio.play().catch(() => {
+        state.music.isPlaying = false;
+        updateMusicProgress();
+      });
+    }
+  }
+
+  async function playMusicTrack(index = state.music.activeIndex) {
+    if (!state.music.tracks.length) {
+      await loadMusicTracks(true);
+    }
+    if (!state.music.tracks.length) {
+      return;
+    }
+    state.music.activeIndex = (index + state.music.tracks.length) % state.music.tracks.length;
+    state.music.activeLine = 0;
+    await hydrateActiveMusicTrack();
+    renderMusicWidget();
+    syncMusicAudio(true);
+  }
+
+  function updateMusicProgress() {
+    const audio = elements.musicAudio;
+    if (!audio || elements.musicWidget.hidden) {
+      return;
+    }
+    const duration = audio.duration || 0;
+    const time = audio.currentTime || 0;
+    const seek = elements.musicPlayer.querySelector(".music-seek");
+    const label = elements.musicPlayer.querySelector(".music-time");
+    if (seek) seek.value = duration ? String(Math.round((time / duration) * 1000)) : "0";
+    if (label) label.textContent = `${formatMusicTime(time)}${duration ? ` / ${formatMusicTime(duration)}` : ""}`;
+
+    const track = getActiveMusicTrack();
+    const lines = track?.lyricLines || [];
+    const nextLine = getActiveMusicLine(lines, time, duration);
+    if (nextLine !== state.music.activeLine) {
+      state.music.activeLine = nextLine;
+      elements.musicPlayer.querySelectorAll(".music-lyric").forEach((line, index) => {
+        line.classList.toggle("is-active", index === nextLine);
+      });
+      elements.musicPlayer.querySelector(`.music-lyric[data-index="${nextLine}"]`)?.scrollIntoView({ block: "center" });
+    }
+
+    const play = elements.musicPlayer.querySelector(".music-play");
+    if (play) play.textContent = state.music.isPlaying ? "||" : "▶";
+  }
+
+  function handleMusicClick(event) {
+    const button = event.target.closest("[data-music-action]");
+    if (!button) return;
+    const action = button.dataset.musicAction;
+    if (action === "toggle") {
+      const audio = elements.musicAudio;
+      if (audio.paused) {
+        playMusicTrack(state.music.activeIndex);
+      } else {
+        audio.pause();
+      }
+    }
+    if (action === "prev") playMusicTrack(state.music.activeIndex - 1);
+    if (action === "next") playMusicTrack(state.music.activeIndex + 1);
+  }
+
+  function handleMusicSeek(event) {
+    if (!event.target.matches("[data-music-action='seek']")) {
+      return;
+    }
+    const audio = elements.musicAudio;
+    if (audio.duration) {
+      audio.currentTime = (Number(event.target.value) / 1000) * audio.duration;
+    }
   }
 
   function renderTodoArchive() {
@@ -2431,6 +2726,7 @@
     renderSearchProviderControl();
     renderSearchPanel();
     renderQuickSites();
+    renderMusicWidget();
     renderTodos();
     renderTodoArchive();
     renderBookmarks();
@@ -2871,6 +3167,7 @@
     document.documentElement.dataset.theme = state.settings.theme || "light";
     document.documentElement.dataset.wallpaper = state.settings.wallpaper || "none";
     elements.todoHome.classList.toggle("is-hidden", !state.settings.showTodos);
+    elements.musicWidget.hidden = !state.settings.showMusicWidget;
     elements.quickSites.classList.toggle("is-hidden", !state.settings.showCustomLinks);
     document.querySelectorAll("[data-setting='language'] button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.value === state.settings.language);
@@ -3199,6 +3496,19 @@
     });
     document.addEventListener("keydown", handleGlobalKeydown);
     elements.settingsPanel.addEventListener("click", handleSettingsClick);
+    elements.musicWidget.addEventListener("click", handleMusicClick);
+    elements.musicWidget.addEventListener("input", handleMusicSeek);
+    elements.musicAudio.addEventListener("play", () => {
+      state.music.isPlaying = true;
+      updateMusicProgress();
+    });
+    elements.musicAudio.addEventListener("pause", () => {
+      state.music.isPlaying = false;
+      updateMusicProgress();
+    });
+    elements.musicAudio.addEventListener("timeupdate", updateMusicProgress);
+    elements.musicAudio.addEventListener("loadedmetadata", updateMusicProgress);
+    elements.musicAudio.addEventListener("ended", () => playMusicTrack(state.music.activeIndex + 1));
     elements.drawerEdge.addEventListener("click", openRecentDrawer);
     elements.weatherEdge.addEventListener("click", openWeatherDrawer);
     elements.closeWeatherButton.addEventListener("click", closeWeatherDrawer);
@@ -3260,6 +3570,7 @@
     await loadFaviconCache();
     await loadHistoryTitleCache();
     applySettings();
+    loadMusicTracks();
     loadHistory();
   }
 
@@ -3582,6 +3893,9 @@
     if (key === "showQuote") {
       refreshQuoteIfNeeded(true);
     }
+    if (key === "showMusicWidget" && value) {
+      loadMusicTracks();
+    }
   }
 
   function toggleSearchProviderMenu() {
@@ -3686,6 +4000,9 @@
       }
       if (setting === "showQuote" || button.dataset.toggle === "showQuote") {
         refreshQuoteIfNeeded(true);
+      }
+      if (button.dataset.toggle === "showMusicWidget" && state.settings.showMusicWidget) {
+        loadMusicTracks();
       }
     });
     render();
