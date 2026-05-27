@@ -3054,6 +3054,9 @@
         window.location.href = state.firstResultUrl;
         return;
       }
+      if (state.query) {
+        submitQueryToSearchProvider("google", state.query);
+      }
     });
     elements.searchInput.addEventListener("input", (event) => {
       state.query = event.target.value.trim();
@@ -3068,6 +3071,14 @@
         if (title) {
           event.preventDefault();
           addSearchQueryAsTodo();
+        }
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        const query = elements.searchInput.value.trim();
+        if (query) {
+          event.preventDefault();
+          submitQueryToSearchProvider("chatgpt", query);
         }
         return;
       }
@@ -3308,8 +3319,7 @@
     return t("momentEvening");
   }
 
-  function getSearchUrl(query) {
-    const provider = getCurrentSearchProvider();
+  function getSearchUrl(query, provider = getCurrentSearchProvider()) {
     return `${provider.prefix}${encodeURIComponent(query)}`;
   }
 
@@ -3330,7 +3340,16 @@
       addSearchQueryAsTodo();
       return true;
     }
-    window.location.href = getSearchUrl(state.query);
+    submitQueryToSearchProvider(state.settings.searchEngine, state.query);
+    return true;
+  }
+
+  function submitQueryToSearchProvider(providerId, query) {
+    const provider = searchProviders[providerId];
+    if (!provider || !query || provider.action) {
+      return false;
+    }
+    window.location.href = getSearchUrl(query, provider);
     return true;
   }
 
