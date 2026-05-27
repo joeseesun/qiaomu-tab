@@ -1,6 +1,6 @@
 (function () {
   const extensionTitle =
-    (typeof chrome !== "undefined" && chrome.i18n?.getMessage?.("extensionName")) || "乔木插件";
+    (typeof chrome !== "undefined" && chrome.i18n?.getMessage?.("extensionName")) || "乔木Tab";
   document.title = extensionTitle;
 
   const storageKey = "qiamuTabLinks";
@@ -29,7 +29,7 @@
   };
   const i18n = {
     zh: {
-      extensionTitle: "乔木插件",
+      extensionTitle: "乔木Tab",
       add: "添加",
       addLink: "添加网址",
       editLink: "编辑网址",
@@ -2155,7 +2155,7 @@
       plus: ["M12 5v14", "M5 12h14"],
       focus: ["M12 8v4l2.5 2.5", "M9 3h6", "M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14"],
       todo: ["M8 12l2.5 2.5L16 9", "M5 5h14v14H5z"],
-      music: ["M9 18V5l10-2v13", "M9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6", "M19 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6"],
+      music: ["M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"],
       settings: ["M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8", "M12 2v3", "M12 19v3", "M2 12h3", "M19 12h3"],
       search: ["M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15", "M16 16l5 5"],
       theme: ["M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9"],
@@ -3560,6 +3560,9 @@
   }
 
   function handleGlobalKeydown(event) {
+    if (handleQuickSubmitShortcut(event)) {
+      return;
+    }
     const isCommandKey = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
     if (isCommandKey) {
       event.preventDefault();
@@ -3573,6 +3576,29 @@
       event.preventDefault();
       closeCommandPalette();
     }
+  }
+
+  function handleQuickSubmitShortcut(event) {
+    if (!event.altKey || !(event.metaKey || event.ctrlKey)) {
+      return false;
+    }
+    const key = event.code?.replace("Key", "").toLowerCase();
+    if (!["g", "k", "t"].includes(key)) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (key === "g") {
+      submitActiveQueryToProvider("google");
+      return true;
+    }
+    if (key === "k") {
+      submitActiveQueryToProvider("chatgpt");
+      return true;
+    }
+    addActiveQueryAsTodo();
+    return true;
   }
 
   function handleCommandKeydown(event) {
@@ -3636,11 +3662,7 @@
   function updateClock() {
     const now = new Date();
     if (!state.focusMode) {
-      elements.timeLine.textContent = new Intl.DateTimeFormat(getLocaleCode(), {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-      }).format(now);
+      renderClockTime(now);
     }
     elements.dayLine.textContent = new Intl.DateTimeFormat(getLocaleCode(), {
       weekday: "long",
@@ -3658,11 +3680,7 @@
     elements.focusToggle.classList.toggle("is-active", state.focusMode);
     elements.focusToggle.setAttribute("aria-pressed", String(state.focusMode));
     if (!state.focusMode) {
-      elements.timeLine.textContent = new Intl.DateTimeFormat(getLocaleCode(), {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-      }).format(new Date());
+      renderClockTime(new Date());
     }
     renderQuote();
     renderPomodoro();
@@ -3678,6 +3696,24 @@
       minute: "2-digit",
       hour12: false
     }).format(now);
+  }
+
+  function renderClockTime(date) {
+    const formatter = new Intl.DateTimeFormat(getLocaleCode(), {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+    const fragment = document.createDocumentFragment();
+    formatter.formatToParts(date).forEach((part) => {
+      const span = document.createElement("span");
+      span.textContent = part.value;
+      if (part.type === "literal" && part.value.includes(":")) {
+        span.className = "time-separator";
+      }
+      fragment.append(span);
+    });
+    elements.timeLine.replaceChildren(fragment);
   }
 
   function getMomentLine(now) {
@@ -3733,6 +3769,38 @@
     }
     window.location.href = getSearchUrl(query, provider);
     return true;
+  }
+
+  function getActiveQueryText() {
+    if (state.commandOpen) {
+      return elements.commandInput.value.trim();
+    }
+    return elements.searchInput.value.trim();
+  }
+
+  function submitActiveQueryToProvider(providerId) {
+    const query = getActiveQueryText();
+    if (!query) {
+      return false;
+    }
+    closeSearchProviderMenu();
+    return submitQueryToSearchProvider(providerId, query);
+  }
+
+  function addActiveQueryAsTodo() {
+    const title = getActiveQueryText();
+    if (!title) {
+      if (state.commandOpen) {
+        closeCommandPalette();
+      }
+      focusTodoInput();
+      return;
+    }
+    if (state.commandOpen) {
+      addCommandQueryAsTodo();
+      return;
+    }
+    addSearchQueryAsTodo();
   }
 
   function addSearchQueryAsTodo() {

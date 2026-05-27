@@ -10,7 +10,6 @@ function runQiamuProviderAutosubmit(config) {
   if (sessionStorage.getItem(submitKey)) {
     return;
   }
-  sessionStorage.setItem(submitKey, "1");
 
   params.delete("qiaomutab");
   const cleanedSearch = params.toString();
@@ -19,7 +18,7 @@ function runQiamuProviderAutosubmit(config) {
 
   function findElement(selectors) {
     for (const selector of selectors) {
-      const element = document.querySelector(selector);
+      const element = [...document.querySelectorAll(selector)].find(isUsableElement);
       if (element) {
         return element;
       }
@@ -27,38 +26,73 @@ function runQiamuProviderAutosubmit(config) {
     return null;
   }
 
+  function isUsableElement(element) {
+    if (!element) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+  }
+
+  function dispatchTextEvents(element, text) {
+    element.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: text }));
+    element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
   function setComposerText(composer, text) {
     composer.focus();
 
     if (composer.tagName === "TEXTAREA" || composer.tagName === "INPUT") {
-      composer.value = text;
-      composer.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
-      composer.dispatchEvent(new Event("change", { bubbles: true }));
+      const setter = Object.getOwnPropertyDescriptor(composer.constructor.prototype, "value")?.set;
+      setter?.call(composer, text);
+      if (!setter) {
+        composer.value = text;
+      }
+      dispatchTextEvents(composer, text);
       return;
     }
 
-    composer.textContent = "";
-    const selection = window.getSelection();
-    const range = document.createRange();
-    composer.append(document.createTextNode(text));
-    range.selectNodeContents(composer);
-    range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    composer.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
-    composer.dispatchEvent(new Event("change", { bubbles: true }));
+    composer.focus();
+    document.execCommand("selectAll", false);
+    document.execCommand("insertText", false, text);
+    if (!getComposerText(composer).includes(text)) {
+      composer.textContent = "";
+      const selection = window.getSelection();
+      const range = document.createRange();
+      composer.append(document.createTextNode(text));
+      range.selectNodeContents(composer);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    dispatchTextEvents(composer, text);
+  }
+
+  function getComposerText(composer) {
+    if (composer.tagName === "TEXTAREA" || composer.tagName === "INPUT") {
+      return composer.value || "";
+    }
+    return composer.textContent || "";
+  }
+
+  function isSendButtonEnabled(button) {
+    return (
+      button
+      && isUsableElement(button)
+      && !button.disabled
+      && button.getAttribute("aria-disabled") !== "true"
+      && button.dataset.disabled !== "true"
+      && button.dataset.loading !== "true"
+    );
   }
 
   function clickSend() {
     const sendButton = findElement(config.sendSelectors);
-    if (
-      sendButton
-      && !sendButton.disabled
-      && sendButton.getAttribute("aria-disabled") !== "true"
-      && sendButton.dataset.disabled !== "true"
-      && sendButton.dataset.loading !== "true"
-    ) {
+    if (isSendButtonEnabled(sendButton)) {
       sendButton.click();
+      sessionStorage.setItem(submitKey, "1");
       return true;
     }
     return false;
@@ -75,23 +109,37 @@ function runQiamuProviderAutosubmit(config) {
     });
   }
 
+  let fallbackSubmitQueued = false;
+
   function submitPrompt() {
     const composer = findElement(config.composerSelectors);
     if (!composer) {
       return false;
     }
 
-    setComposerText(composer, prompt);
+    if (!getComposerText(composer).includes(prompt)) {
+      setComposerText(composer, prompt);
+    }
 
+    if (clickSend()) {
+      return true;
+    }
+
+    if (fallbackSubmitQueued) {
+      return false;
+    }
+    fallbackSubmitQueued = true;
     window.setTimeout(() => {
       if (clickSend()) {
         return;
       }
 
       pressEnter(composer);
+      sessionStorage.setItem(submitKey, "1");
+      fallbackSubmitQueued = false;
     }, config.submitDelay || 160);
 
-    return true;
+    return false;
   }
 
   let attempts = 0;

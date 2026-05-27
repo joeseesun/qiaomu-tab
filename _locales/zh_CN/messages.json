@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "乔木插件",
+    "message": "乔木Tab",
     "description": "中文 Chrome 界面中显示的扩展名称。"
   },
   "extensionShortName": {
-    "message": "乔木插件",
+    "message": "乔木Tab",
     "description": "空间有限时显示的中文扩展短名称。"
   },
   "extensionDescription": {
@@ -12,7 +12,7 @@
     "description": "中文 Chrome 界面中显示的扩展描述。"
   },
   "actionDefaultTitle": {
-    "message": "打开乔木插件",
+    "message": "打开乔木Tab",
     "description": "中文 Chrome 界面中的工具栏提示。"
   }
 }
