@@ -2661,11 +2661,18 @@ p {
 
 .command-search {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 14px 16px;
   border-bottom: 1px solid var(--line);
+}
+
+.command-search .search-provider {
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 20;
 }
 
 .command-search input {

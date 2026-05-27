@@ -224,11 +224,16 @@
     <div id="commandPalette" class="command-palette" hidden>
       <div class="command-backdrop"></div>
       <section class="command-menu" role="dialog" aria-modal="true" aria-label="命令面板">
-        <label class="command-search">
-          <span class="sr-only">命令搜索</span>
+        <div class="command-search">
+          <div class="search-provider command-search-provider">
+            <button id="commandSearchProviderButton" class="search-provider-button" type="button" aria-label="切换搜索引擎" aria-haspopup="true" aria-expanded="false">
+            </button>
+            <div id="commandSearchProviderMenu" class="search-provider-menu" hidden></div>
+          </div>
+          <label class="sr-only" for="commandInput">命令搜索</label>
           <input id="commandInput" type="text" placeholder="搜索命令、收藏、最近访问" autocomplete="off">
           <kbd>⌘K</kbd>
-        </label>
+        </div>
         <div id="commandResults" class="command-results" role="listbox"></div>
       </section>
     </div>

@@ -696,6 +696,8 @@
     commandPalette: document.querySelector("#commandPalette"),
     commandInput: document.querySelector("#commandInput"),
     commandResults: document.querySelector("#commandResults"),
+    commandSearchProviderButton: document.querySelector("#commandSearchProviderButton"),
+    commandSearchProviderMenu: document.querySelector("#commandSearchProviderMenu"),
     showTodos: document.querySelector("#showTodos"),
     settingButtons: document.querySelectorAll("[data-setting] button, [data-toggle]"),
     toast: null
@@ -820,7 +822,7 @@
     setText(".settings-pill", "pending");
 
     setAttr(".command-menu", "aria-label", "commandPalette");
-    setText("label.command-search .sr-only", "commandSearch");
+    setText("label[for='commandInput']", "commandSearch");
     setAttr("#commandInput", "placeholder", "commandPlaceholder");
     setText("#dialogTitle", elements.linkId.value ? "editLink" : "addLink");
     setAttr("#closeDialogButton", "aria-label", "close");
@@ -2516,25 +2518,34 @@
     const providerId = searchProviders[state.settings.searchEngine] ? state.settings.searchEngine : "";
     const provider = providerId ? searchProviders[providerId] : localSearchProvider;
     const providerLabel = provider.labelKey ? t(provider.labelKey) : provider.label;
-    elements.searchProviderButton.replaceChildren(createSearchProviderIcon(provider));
-    elements.searchProviderButton.title = providerLabel;
-    elements.searchProviderMenu.replaceChildren();
+    populateSearchProviderControl(elements.searchProviderButton, elements.searchProviderMenu, providerId, provider, providerLabel);
+    populateSearchProviderControl(elements.commandSearchProviderButton, elements.commandSearchProviderMenu, providerId, provider, providerLabel);
+    if (!state.siteSearch) {
+      elements.searchInput.placeholder = provider.action === "todo" ? t("todoPlaceholder") : t("searchPlaceholder");
+    }
+    elements.commandInput.placeholder = provider.action === "todo" ? t("todoPlaceholder") : t("commandPlaceholder");
+  }
+
+  function populateSearchProviderControl(buttonElement, menuElement, providerId, provider, providerLabel) {
+    if (!buttonElement || !menuElement) {
+      return;
+    }
+    buttonElement.replaceChildren(createSearchProviderIcon(provider));
+    buttonElement.title = providerLabel;
+    menuElement.replaceChildren();
     const localButton = createElement("button", `search-provider-option${providerId ? "" : " is-active"}`);
     localButton.type = "button";
     localButton.dataset.searchProvider = "";
     localButton.append(createSearchProviderIcon(localSearchProvider), createElement("span", "", t("localSearch")));
-    elements.searchProviderMenu.append(localButton);
+    menuElement.append(localButton);
     searchProviderOrder.forEach((id) => {
       const option = searchProviders[id];
       const button = createElement("button", `search-provider-option${id === providerId ? " is-active" : ""}`);
       button.type = "button";
       button.dataset.searchProvider = id;
       button.append(createSearchProviderIcon(option), createElement("span", "", option.label));
-      elements.searchProviderMenu.append(button);
+      menuElement.append(button);
     });
-    if (!state.siteSearch) {
-      elements.searchInput.placeholder = provider.action === "todo" ? t("todoPlaceholder") : t("searchPlaceholder");
-    }
   }
 
   function createSearchProviderIcon(provider) {
@@ -3415,7 +3426,7 @@
     });
     elements.searchProviderButton.addEventListener("click", (event) => {
       event.preventDefault();
-      toggleSearchProviderMenu();
+      toggleSearchProviderMenu(elements.searchProviderMenu, elements.searchProviderButton);
     });
     elements.searchProviderMenu.addEventListener("click", (event) => {
       const button = event.target.closest("[data-search-provider]");
@@ -3484,6 +3495,16 @@
       renderCommandResults();
     });
     elements.commandInput.addEventListener("keydown", handleCommandKeydown);
+    elements.commandSearchProviderButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      toggleSearchProviderMenu(elements.commandSearchProviderMenu, elements.commandSearchProviderButton);
+    });
+    elements.commandSearchProviderMenu.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-search-provider]");
+      if (button) {
+        setSearchProvider(button.dataset.searchProvider);
+      }
+    });
     elements.commandPalette.addEventListener("click", (event) => {
       if (event.target.classList.contains("command-backdrop")) {
         closeCommandPalette();
@@ -3539,6 +3560,22 @@
 
   function handleCommandKeydown(event) {
     const actions = getFilteredCommandActions();
+    if (event.shiftKey && event.key === "Enter") {
+      const title = elements.commandInput.value.trim();
+      if (title) {
+        event.preventDefault();
+        addCommandQueryAsTodo();
+      }
+      return;
+    }
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      const query = elements.commandInput.value.trim();
+      if (query) {
+        event.preventDefault();
+        submitQueryToSearchProvider("chatgpt", query);
+      }
+      return;
+    }
     if (event.key === "ArrowDown") {
       event.preventDefault();
       state.commandIndex = Math.min(actions.length - 1, state.commandIndex + 1);
@@ -3552,6 +3589,11 @@
     if (event.key === "Enter" && actions[state.commandIndex]) {
       event.preventDefault();
       runCommand(actions[state.commandIndex]);
+      return;
+    }
+    if (event.key === "Enter" && state.commandQuery) {
+      event.preventDefault();
+      submitCommandQuery();
     }
   }
 
@@ -3655,6 +3697,18 @@
     return true;
   }
 
+  function submitCommandQuery() {
+    if (hasSelectedSearchProvider() && state.settings.searchEngine !== "todo") {
+      submitQueryToSearchProvider(state.settings.searchEngine, state.commandQuery);
+      return;
+    }
+    if (state.settings.searchEngine === "todo") {
+      addCommandQueryAsTodo();
+      return;
+    }
+    submitQueryToSearchProvider("google", state.commandQuery);
+  }
+
   function submitQueryToSearchProvider(providerId, query) {
     const provider = searchProviders[providerId];
     if (!provider || !query || provider.action) {
@@ -3677,6 +3731,22 @@
         state.query = title;
       }
       renderSearchPanel();
+    });
+  }
+
+  function addCommandQueryAsTodo() {
+    const title = elements.commandInput.value.trim();
+    if (!title) {
+      return;
+    }
+    elements.commandInput.value = "";
+    state.commandQuery = "";
+    addTodo(title.slice(0, 120)).then((added) => {
+      if (!added) {
+        elements.commandInput.value = title;
+        state.commandQuery = title;
+      }
+      renderCommandResults();
     });
   }
 
@@ -3898,15 +3968,20 @@
     }
   }
 
-  function toggleSearchProviderMenu() {
-    const nextHidden = !elements.searchProviderMenu.hidden;
-    elements.searchProviderMenu.hidden = nextHidden;
-    elements.searchProviderButton.setAttribute("aria-expanded", String(!nextHidden));
+  function toggleSearchProviderMenu(menuElement = elements.searchProviderMenu, buttonElement = elements.searchProviderButton) {
+    const nextHidden = !menuElement.hidden;
+    closeSearchProviderMenu();
+    menuElement.hidden = nextHidden;
+    buttonElement.setAttribute("aria-expanded", String(!nextHidden));
   }
 
   function closeSearchProviderMenu() {
     elements.searchProviderMenu.hidden = true;
     elements.searchProviderButton.setAttribute("aria-expanded", "false");
+    if (elements.commandSearchProviderMenu && elements.commandSearchProviderButton) {
+      elements.commandSearchProviderMenu.hidden = true;
+      elements.commandSearchProviderButton.setAttribute("aria-expanded", "false");
+    }
   }
 
   function setSearchProvider(providerId) {
@@ -3917,7 +3992,7 @@
     closeSearchProviderMenu();
     saveSettings();
     render();
-    elements.searchInput.focus();
+    (state.commandOpen ? elements.commandInput : elements.searchInput).focus();
   }
 
   function focusTodoInput() {
