@@ -68,6 +68,14 @@ npm install
 npm run build:notes
 ```
 
+如果需要生成可上传或备份的压缩包，可以继续运行：
+
+```bash
+npm run build:release
+```
+
+发布包会生成在 `dist/qiaomu-tab-<version>.zip`，脚本会同时校验 Manifest V3、必要文件和 zip 完整性。
+
 ### 4. 在 Chrome 加载
 
 1. 打开 `chrome://extensions`
@@ -75,6 +83,8 @@ npm run build:notes
 3. 点击 `Load unpacked`
 4. 选择刚刚克隆的 `qiaomu-tab` 文件夹
 5. 打开一个新标签页，看到 `乔木Tab` 就可以开始使用
+
+> 开发者模式本地调试请选择解压后的仓库目录；Chrome Web Store 上传或分发备份时再使用 `dist/` 下的 zip。
 
 ## 快速上手
 
@@ -124,6 +134,12 @@ npm run build:notes
 
 便签编辑器源码在 `src/note-editor.js`，构建产物是 `assets/note-editor.bundle.js`。
 
+发布包构建命令：
+
+```bash
+npm run build:release
+```
+
 ## 项目结构
 
 ```text
@@ -148,6 +164,9 @@ npm run build:notes
 | --- | --- |
 | 加载后新标签页没有变化 | 确认扩展已启用，然后重新打开一个新标签页。 |
 | 便签编辑器不可用 | 运行 `npm install && npm run build:notes`，确认生成了 `assets/note-editor.bundle.js`。 |
+| 构建时报 `Could not resolve "@tiptap/core"` | 说明依赖没有安装完整。请确认在仓库根目录运行 `npm install`，并检查 `node_modules/@tiptap` 是否存在。 |
+| `npm install` 报 `EACCES` 或提示 npm cache 有 root-owned files | 这是本机 npm 缓存权限问题。可按 npm 输出的建议修复 `~/.npm` 权限，或临时运行 `npm install --cache ./.npm-cache` 后删除 `.npm-cache`。 |
+| 需要 Chrome 商店上传包 | 运行 `npm run build:release`，使用 `dist/qiaomu-tab-<version>.zip`。 |
 | 最近访问或收藏夹为空 | 检查扩展详情页里 `history` 和 `bookmarks` 权限是否已授权。 |
 | 天气无法加载 | 确认网络可访问高德天气接口，或在代码里替换自己的高德 Web 服务 Key。 |
 | AI 搜索没有自动提交 | 目标网站可能改版或拦截自动输入，可以先把关键词带到页面后手动提交。 |
