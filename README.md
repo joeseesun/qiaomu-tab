@@ -98,9 +98,9 @@ npm run build:notes
 | `https://www.kimi.com/*` | 把关键词带到 Kimi 页面。 |
 | `https://www.google.com/*` | 搜索和 favicon 回退。 |
 | `https://mp.weixin.qq.com/*` | 改善微信文章在历史记录里的标题显示。 |
+| `https://music.qiaomu.ai/*` | 获取音乐模块的公开曲目、歌词和音频资源。 |
 | `https://v1.hitokoto.cn/*` | 获取首页每日一句。 |
 | `https://restapi.amap.com/*` | 获取天气数据。 |
-| `<all_urls>` | 为 favicon 回退、常见站点识别和未来兼容保留能力。 |
 
 ## 隐私边界
 

@@ -63,9 +63,9 @@
     "https://www.kimi.com/*",
     "https://www.google.com/*",
     "https://mp.weixin.qq.com/*",
+    "https://music.qiaomu.ai/*",
     "https://v1.hitokoto.cn/*",
-    "https://restapi.amap.com/*",
-    "<all_urls>"
+    "https://restapi.amap.com/*"
   ],
   "icons": {
     "16": "assets/icon16.png",

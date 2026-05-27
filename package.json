@@ -5,7 +5,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build:notes": "esbuild src/note-editor.js --bundle --format=iife --outfile=assets/note-editor.bundle.js"
+    "build:notes": "esbuild src/note-editor.js --bundle --format=iife --outfile=assets/note-editor.bundle.js",
+    "build:release": "npm run build:notes && node scripts/build-release.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^2.12.0",
