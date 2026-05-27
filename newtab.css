@@ -237,6 +237,11 @@ a {
   height: 13px;
 }
 
+.module-toggle.is-disabled {
+  color: var(--muted);
+  opacity: 0.78;
+}
+
 .focus-toggle.is-active {
   color: var(--ink);
   background: var(--accent-soft);

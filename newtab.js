@@ -625,6 +625,8 @@
     dayLine: document.querySelector("#dayLine"),
     focusToggle: document.querySelector("#focusToggle"),
     noteCreateButton: document.querySelector("#noteCreateButton"),
+    todoModuleToggle: document.querySelector("#todoModuleToggle"),
+    musicModuleToggle: document.querySelector("#musicModuleToggle"),
     clockFace: document.querySelector("#clockFace"),
     focusFace: document.querySelector("#focusFace"),
     timeLine: document.querySelector("#timeLine"),
@@ -762,6 +764,8 @@
     setAttr(".hero", "aria-label", "newTab");
     setAttr("#focusToggle", "aria-label", "pomodoro");
     setAttr("#noteCreateButton", "aria-label", "newNote");
+    setAttr("#todoModuleToggle", "aria-label", "todayTodo");
+    setAttr("#musicModuleToggle", "aria-label", "qiaomuMusic");
     setAttr(".pomodoro-modes", "aria-label", "pomodoroMode");
     setAttr("#homePomodoroStart", "aria-label", "startOrPause");
     setAttr("#homePomodoroReset", "aria-label", "reset");
@@ -2151,6 +2155,7 @@
       plus: ["M12 5v14", "M5 12h14"],
       focus: ["M12 8v4l2.5 2.5", "M9 3h6", "M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14"],
       todo: ["M8 12l2.5 2.5L16 9", "M5 5h14v14H5z"],
+      music: ["M9 18V5l10-2v13", "M9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6", "M19 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6"],
       settings: ["M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8", "M12 2v3", "M12 19v3", "M2 12h3", "M19 12h3"],
       search: ["M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15", "M16 16l5 5"],
       theme: ["M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9"],
@@ -2749,6 +2754,15 @@
     renderCommandResults();
   }
 
+  function renderModuleToggles() {
+    elements.todoModuleToggle.replaceChildren(createIconSvg("todo"));
+    elements.musicModuleToggle.replaceChildren(createIconSvg("music"));
+    elements.todoModuleToggle.classList.toggle("is-active", Boolean(state.settings.showTodos));
+    elements.musicModuleToggle.classList.toggle("is-active", Boolean(state.settings.showMusicWidget));
+    elements.todoModuleToggle.classList.toggle("is-disabled", !state.settings.showTodos);
+    elements.musicModuleToggle.classList.toggle("is-disabled", !state.settings.showMusicWidget);
+  }
+
   function renderWeather() {
     if (!elements.weatherCards) {
       return;
@@ -3179,6 +3193,7 @@
     document.documentElement.dataset.wallpaper = state.settings.wallpaper || "none";
     elements.todoHome.classList.toggle("is-hidden", !state.settings.showTodos);
     elements.musicWidget.hidden = !state.settings.showMusicWidget;
+    renderModuleToggles();
     elements.quickSites.classList.toggle("is-hidden", !state.settings.showCustomLinks);
     document.querySelectorAll("[data-setting='language'] button").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.value === state.settings.language);
@@ -3436,6 +3451,8 @@
     });
     elements.clearSiteSearch.addEventListener("click", clearSiteSearch);
     elements.noteCreateButton.addEventListener("click", createNote);
+    elements.todoModuleToggle.addEventListener("click", () => setSetting("showTodos", !state.settings.showTodos));
+    elements.musicModuleToggle.addEventListener("click", () => setSetting("showMusicWidget", !state.settings.showMusicWidget));
     elements.quickSites.addEventListener("mouseenter", () => {
       elements.quickSites.classList.add("is-hovering");
     });
