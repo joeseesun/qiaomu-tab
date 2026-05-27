@@ -126,6 +126,7 @@
       noCustomMatch: "没有匹配的收藏。",
       noCustomLinks: "还没有收藏的网址。",
       editNamed: "编辑 {title}",
+      deleteNamed: "删除 {title}",
       bookmarkCount: "{count} 个收藏",
       noBookmarkMatch: "没有匹配的收藏。",
       noBookmarkAccess: "当前环境不能读取浏览器收藏。",
@@ -324,6 +325,7 @@
       noCustomMatch: "No matching saved sites.",
       noCustomLinks: "No saved sites yet.",
       editNamed: "Edit {title}",
+      deleteNamed: "Delete {title}",
       bookmarkCount: "{count} bookmarks",
       noBookmarkMatch: "No matching bookmarks.",
       noBookmarkAccess: "Bookmarks are unavailable in this environment.",
@@ -590,6 +592,7 @@
     siteSearch: null,
     tabCandidate: null,
     quickSitePage: 0,
+    quickSitesEditing: false,
     quote: null,
     weather: {
       cities: [],
@@ -1348,6 +1351,7 @@
     elements.quickSiteRail.replaceChildren();
     const sites = state.links.slice(0, 15);
     const quickItems = sites.map((link) => createQuickSiteItem(link));
+    elements.quickSites.classList.toggle("is-editing", state.quickSitesEditing);
 
     const add = createElement("button", "quick-site quick-add");
     add.type = "button";
@@ -1372,13 +1376,82 @@
   }
 
   function createQuickSiteItem(link) {
-    const item = createElement("a", "quick-site");
-    item.href = link.url;
-    item.title = link.title;
+    const item = createElement("div", "quick-site-card");
+    const anchor = createElement("a", "quick-site");
+    const edit = createElement("button", "quick-site-action quick-site-edit", "✎");
+    const remove = createElement("button", "quick-site-action quick-site-delete", "×");
+    anchor.href = link.url;
+    anchor.title = link.title;
+    edit.type = "button";
+    remove.type = "button";
+    edit.setAttribute("aria-label", t("editNamed", { title: link.title }));
+    remove.setAttribute("aria-label", t("deleteNamed", { title: link.title }));
+    anchor.addEventListener("click", (event) => {
+      if (!state.quickSitesEditing) {
+        return;
+      }
+      event.preventDefault();
+      openDialog(link);
+    });
+    anchor.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      enterQuickSitesEditMode();
+    });
+    edit.addEventListener("click", () => openDialog(link));
+    remove.addEventListener("click", () => openDialog(link));
     const icon = createElement("span", "quick-site-icon");
     icon.append(createFavicon(link));
-    item.append(icon, createElement("span", "quick-site-title", link.title));
+    anchor.append(icon, createElement("span", "quick-site-title", link.title));
+    item.append(anchor, edit, remove);
+    bindQuickSiteLongPress(item);
     return item;
+  }
+
+  function enterQuickSitesEditMode() {
+    if (state.quickSitesEditing) {
+      return;
+    }
+    state.quickSitesEditing = true;
+    renderQuickSites();
+  }
+
+  function exitQuickSitesEditMode() {
+    if (!state.quickSitesEditing) {
+      return;
+    }
+    state.quickSitesEditing = false;
+    renderQuickSites();
+  }
+
+  function bindQuickSiteLongPress(item) {
+    let timer = 0;
+    let longPressed = false;
+    const clearTimer = () => {
+      window.clearTimeout(timer);
+      timer = 0;
+    };
+    item.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || state.quickSitesEditing) {
+        return;
+      }
+      clearTimer();
+      longPressed = false;
+      timer = window.setTimeout(() => {
+        longPressed = true;
+        enterQuickSitesEditMode();
+      }, 520);
+    });
+    item.addEventListener("click", (event) => {
+      if (!longPressed) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      longPressed = false;
+    }, true);
+    item.addEventListener("pointerup", clearTimer);
+    item.addEventListener("pointerleave", clearTimer);
+    item.addEventListener("pointercancel", clearTimer);
   }
 
   function chunkItems(items, size) {
@@ -1601,11 +1674,21 @@
 
   function renderMusicLyrics(container, lines) {
     const visibleLines = lines.length ? lines : [{ text: "..." }];
-    visibleLines.slice(0, 18).forEach((line, index) => {
+    visibleLines.forEach((line, index) => {
       const item = createElement("p", `music-lyric${index === state.music.activeLine ? " is-active" : ""}`, line.text);
       item.dataset.index = String(index);
       container.append(item);
     });
+  }
+
+  function scrollMusicLyricIntoView(index) {
+    const container = elements.musicPlayer.querySelector(".music-lyrics");
+    const activeLine = container?.querySelector(`.music-lyric[data-index="${index}"]`);
+    if (!container || !activeLine) {
+      return;
+    }
+    const targetTop = activeLine.offsetTop - (container.clientHeight - activeLine.offsetHeight) / 2;
+    container.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
   }
 
   function syncMusicAudio(autoplay) {
@@ -1660,7 +1743,7 @@
       elements.musicPlayer.querySelectorAll(".music-lyric").forEach((line, index) => {
         line.classList.toggle("is-active", index === nextLine);
       });
-      elements.musicPlayer.querySelector(`.music-lyric[data-index="${nextLine}"]`)?.scrollIntoView({ block: "center" });
+      scrollMusicLyricIntoView(nextLine);
     }
 
     const play = elements.musicPlayer.querySelector(".music-play");
@@ -3307,11 +3390,12 @@
     elements.noteCreateButton.addEventListener("click", createNote);
     elements.todoModuleToggle.addEventListener("click", () => setSetting("showTodos", !state.settings.showTodos));
     elements.musicModuleToggle.addEventListener("click", () => setSetting("showMusicWidget", !state.settings.showMusicWidget));
-    elements.quickSites.addEventListener("mouseenter", () => {
-      elements.quickSites.classList.add("is-hovering");
-    });
-    elements.quickSites.addEventListener("mouseleave", () => {
-      elements.quickSites.classList.remove("is-hovering");
+    elements.quickSites.addEventListener("contextmenu", (event) => {
+      if (!event.target.closest(".quick-site-card")) {
+        return;
+      }
+      event.preventDefault();
+      enterQuickSitesEditMode();
     });
     elements.quickSiteRail.addEventListener("scroll", () => {
       window.clearTimeout(elements.quickSiteRail._scrollTimer);
@@ -3385,6 +3469,9 @@
       if (!event.target.closest(".search-provider")) {
         closeSearchProviderMenu();
       }
+      if (state.quickSitesEditing && !event.target.closest(".quick-sites")) {
+        exitQuickSitesEditMode();
+      }
     });
     document.addEventListener("keydown", handleGlobalKeydown);
     elements.settingsPanel.addEventListener("click", handleSettingsClick);
@@ -3415,6 +3502,11 @@
 
   function handleGlobalKeydown(event) {
     if (handleQuickSubmitShortcut(event)) {
+      return;
+    }
+    if (event.key === "Escape" && state.quickSitesEditing) {
+      event.preventDefault();
+      exitQuickSitesEditMode();
       return;
     }
     const isCommandKey = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
