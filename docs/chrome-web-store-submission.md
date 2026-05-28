@@ -30,13 +30,13 @@ Detailed description:
 
 乔木Tab 把 Chrome 新标签页换成一个安静、漂亮、本地优先的个人工作台。
 
-它适合每天频繁打开新标签页、在搜索、AI 工具、收藏夹、历史记录和轻量待办之间切换的人。核心数据保存在浏览器本地，不需要注册登录。
+它适合每天频繁打开新标签页、需要在本地资料、常用入口和轻量任务之间快速切换的人。核心数据保存在浏览器本地，不需要注册登录。
 
 主要功能：
 
-- 搜索网址、历史记录、收藏夹，并可切换 Google、ChatGPT、豆包、Kimi、百度、Bing、DuckDuckGo。
+- 在一个搜索框中查找网址、历史记录和收藏夹，并可按需切换本地搜索、网页搜索和 AI 入口。
 - 管理自定义常用网站，自动匹配常见品牌图标。
-- 查看最近访问记录，并按 AI、开发、工作、阅读、社交、影音、购物等场景整理。
+- 查看最近访问记录，并按常见使用场景整理。
 - 读取浏览器收藏夹，作为新标签页侧栏的快速导航。
 - 添加今日待办、便签和番茄钟。
 - 添加关注城市，查看天气和预报。
@@ -47,7 +47,7 @@ Detailed description:
 
 乔木Tab 会读取浏览历史和收藏夹，用于新标签页内的最近访问、分类、本地搜索和收藏夹展示。自定义网站、待办、便签、设置和缓存默认保存在浏览器本地。插件不会把你的浏览历史、收藏夹、待办或便签上传到乔木Tab 自己的服务器。
 
-部分功能会在你启用或使用时访问第三方服务：天气请求高德天气接口，每日一句请求一言接口，favicon 回退请求 Google favicon 服务，音乐模块请求乔木音乐公开接口。当你主动选择 Google、ChatGPT、豆包、Kimi 等搜索目标时，输入的关键词会发送到对应服务页面。
+部分功能会在你启用或使用时访问第三方服务：天气、每日一句、图标兜底、音乐模块，以及用户主动选择的外部搜索或 AI 入口。使用外部入口时，输入的关键词会发送到你选择的服务页面。
 
 ## Permission Justifications
 
@@ -136,3 +136,7 @@ Remote services disclosure:
 8. Fill Privacy using the single purpose, data disclosure, and permission justifications above.
 9. Fill Test instructions using the checklist above.
 10. Set distribution visibility and submit for review.
+
+## Rejection Fix Notes
+
+For the Yellow Argon rejection, do not paste long brand or search-provider lists into the product description. The revised Store Listing above describes search and AI entry points in context, while provider names remain only in permission and privacy explanations where they are needed for accuracy.
