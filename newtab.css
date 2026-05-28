@@ -1233,32 +1233,37 @@ p {
 
 .music-lyrics {
   grid-column: 1 / -1;
-  display: grid;
-  align-content: start;
-  gap: 3px;
-  height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 78px;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 8px 4px;
+  padding: 10px 4px;
   scroll-behavior: smooth;
   scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 46%, transparent);
 }
 
 .music-lyrics::-webkit-scrollbar {
   display: none;
 }
 
+.music-lyrics.is-empty {
+  justify-content: center;
+}
+
 .music-lyric {
+  flex: 0 0 auto;
   margin: 0;
   overflow: hidden;
-  color: color-mix(in srgb, var(--muted) 78%, transparent);
+  color: color-mix(in srgb, var(--ink) 42%, var(--muted));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 12px;
   font-weight: 650;
   line-height: 1.45;
-  opacity: 0.58;
+  opacity: 0.72;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: color 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
@@ -1269,6 +1274,13 @@ p {
   font-weight: 750;
   opacity: 1;
   transform: translateX(4px);
+}
+
+.music-lyric.is-placeholder {
+  color: var(--muted);
+  opacity: 0.82;
+  text-align: center;
+  transform: none;
 }
 
 .music-empty {

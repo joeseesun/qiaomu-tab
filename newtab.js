@@ -82,6 +82,8 @@
       musicLoading: "正在连接乔木音乐。",
       musicUnavailable: "音乐暂时不可用",
       noMusicTracks: "还没有公开歌曲。",
+      lyricsLoading: "歌词载入中",
+      noLyrics: "暂无歌词",
       openMusicSite: "打开音乐站",
       previousTrack: "上一首",
       nextTrack: "下一首",
@@ -281,6 +283,8 @@
       musicLoading: "Connecting to Qiaomu Music.",
       musicUnavailable: "Music is unavailable",
       noMusicTracks: "No published tracks yet.",
+      lyricsLoading: "Loading lyrics",
+      noLyrics: "No lyrics",
       openMusicSite: "Open music site",
       previousTrack: "Previous track",
       nextTrack: "Next track",
@@ -1291,6 +1295,31 @@
     return Number(match[1]) * 60 + Number(match[2]) + fraction;
   }
 
+  function isMusicLyricPlaceholder(text = "") {
+    return /^[.\u2026…·・。\\-\s]+$/.test(String(text).trim());
+  }
+
+  function isMusicLyricMetadata(text = "") {
+    return /^\[(?:ti|ar|al|by|offset|length|re|ve):[^\]]*\]$/i.test(String(text).trim());
+  }
+
+  function normalizeMusicLyricLines(lines = []) {
+    return lines.reduce((normalized, line, index) => {
+      const text = String(typeof line === "string" ? line : line?.text || "").trim();
+      if (!text || isMusicLyricPlaceholder(text) || isMusicLyricMetadata(text)) {
+        return normalized;
+      }
+      const time = typeof line?.time === "number" ? line.time : undefined;
+      normalized.push({
+        ...(typeof line === "object" && line ? line : {}),
+        id: line?.id || `${index}-${time ?? "plain"}-${text}`,
+        text,
+        ...(time === undefined ? {} : { time })
+      });
+      return normalized;
+    }, []);
+  }
+
   function parseMusicLyrics(lyrics = "") {
     const lines = [];
     String(lyrics || "").split(/\r?\n/).forEach((rawLine, index) => {
@@ -1300,7 +1329,7 @@
         .map((match) => parseLrcTime(match[1]))
         .filter((value) => value !== null);
       const text = trimmed.replace(/\[[^\]]+\]/g, "").trim();
-      if (!text && stamps.length) return;
+      if (!text || isMusicLyricPlaceholder(text)) return;
       if (stamps.length) {
         stamps.forEach((stamp) => lines.push({ id: `${index}-${stamp}-${text}`, text, time: stamp }));
         return;
@@ -1585,11 +1614,15 @@
     }
     try {
       const response = await fetch(track.apiUrl || `${musicApiBase}/api/public/tracks/${encodeURIComponent(track.id)}`, { cache: "no-store" });
-      if (!response.ok) return;
+      if (!response.ok) {
+        track.lyricsLoaded = true;
+        track.lyricLines = [];
+        return;
+      }
       const data = await response.json();
       const detail = data.track || {};
       Object.assign(track, detail, {
-        lyricLines: Array.isArray(detail.lyricLines) ? detail.lyricLines : parseMusicLyrics(detail.lyrics || ""),
+        lyricLines: Array.isArray(detail.lyricLines) ? normalizeMusicLyricLines(detail.lyricLines) : parseMusicLyrics(detail.lyrics || ""),
         lyricsLoaded: true
       });
     } catch {
@@ -1665,30 +1698,36 @@
 
     const time = createElement("span", "music-time", "0:00");
     const lyrics = createElement("div", "music-lyrics");
-    renderMusicLyrics(lyrics, track.lyricLines || []);
+    renderMusicLyrics(lyrics, track.lyricLines || [], Boolean(track.lyricsLoaded));
 
     elements.musicPlayer.append(cover, copy, controls, seek, time, lyrics);
     syncMusicAudio(false);
     updateMusicProgress();
   }
 
-  function renderMusicLyrics(container, lines) {
-    const visibleLines = lines.length ? lines : [{ text: "..." }];
+  function renderMusicLyrics(container, lines, lyricsLoaded = false) {
+    const visibleLines = lines.length ? lines : [{ text: lyricsLoaded ? t("noLyrics") : t("lyricsLoading"), placeholder: true }];
+    const activeIndex = Math.max(0, Math.min(state.music.activeLine, visibleLines.length - 1));
+    container.classList.toggle("is-empty", !lines.length);
     visibleLines.forEach((line, index) => {
-      const item = createElement("p", `music-lyric${index === state.music.activeLine ? " is-active" : ""}`, line.text);
+      const item = createElement("p", `music-lyric${index === activeIndex ? " is-active" : ""}${line.placeholder ? " is-placeholder" : ""}`, line.text);
       item.dataset.index = String(index);
       container.append(item);
     });
+    window.requestAnimationFrame(() => scrollMusicLyricIntoView(activeIndex, "auto"));
   }
 
-  function scrollMusicLyricIntoView(index) {
+  function scrollMusicLyricIntoView(index, behavior = "smooth") {
     const container = elements.musicPlayer.querySelector(".music-lyrics");
-    const activeLine = container?.querySelector(`.music-lyric[data-index="${index}"]`);
+    const lines = Array.from(container?.querySelectorAll(".music-lyric") || []);
+    const activeLine = lines[Math.max(0, Math.min(index, lines.length - 1))];
     if (!container || !activeLine) {
       return;
     }
-    const targetTop = activeLine.offsetTop - (container.clientHeight - activeLine.offsetHeight) / 2;
-    container.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeLine.getBoundingClientRect();
+    const delta = activeRect.top - containerRect.top - (container.clientHeight - activeRect.height) / 2;
+    container.scrollTo({ top: Math.max(0, container.scrollTop + delta), behavior });
   }
 
   function syncMusicAudio(autoplay) {
