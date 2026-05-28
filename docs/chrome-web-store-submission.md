@@ -2,8 +2,8 @@
 
 ## Package
 
-- Upload file: `dist/qiaomu-tab-0.1.0.zip`
-- Version: `0.1.0`
+- Upload file: `dist/qiaomu-tab-0.1.1.zip`
+- Version: `0.1.1`
 - Manifest: MV3
 - Category: Productivity
 - Language: Chinese Simplified, English
@@ -48,6 +48,29 @@ Detailed description:
 乔木Tab 会读取浏览历史和收藏夹，用于新标签页内的最近访问、分类、本地搜索和收藏夹展示。自定义网站、待办、便签、设置和缓存默认保存在浏览器本地。插件不会把你的浏览历史、收藏夹、待办或便签上传到乔木Tab 自己的服务器。
 
 部分功能会在你启用或使用时访问第三方服务：天气、每日一句、图标兜底、音乐模块，以及用户主动选择的外部搜索或 AI 入口。使用外部入口时，输入的关键词会发送到你选择的服务页面。
+
+Default English detailed description:
+
+Qiaomu Tab turns Chrome's new tab page into a calm, polished, local-first personal dashboard.
+
+It is designed for people who open new tabs throughout the day and want one quiet place for local search, quick links, recent browsing, bookmarks, todos, notes, weather, and lightweight music. Core user data stays in the browser, and the extension does not require an account.
+
+Main features:
+
+- Search websites, browsing history, and bookmarks from one input, with optional external search and AI entry points.
+- Manage custom quick links with automatic matching for common site icons.
+- View recent browsing history grouped by practical usage contexts.
+- Browse Chrome bookmarks in a clean side panel and include them in local search.
+- Add daily todos, notes, and a Pomodoro focus timer.
+- Add weather cities and view live weather and forecasts.
+- Show a daily quote and a small music widget.
+- Support Chinese, English, light and dark themes, and wallpaper switching.
+
+Privacy boundary:
+
+Qiaomu Tab reads browsing history and bookmarks only to show recent visits, categories, local search results, and the bookmarks panel inside the new tab page. Custom links, todos, notes, settings, and caches are stored locally in Chrome extension storage. Qiaomu Tab does not upload browsing history, bookmarks, todos, or notes to its own server.
+
+Some optional or user-triggered features contact third-party services, including weather, daily quote, favicon fallback, music, and the external search or AI entry point selected by the user. When the user actively chooses an external search target, the query is sent to that selected service.
 
 ## Permission Justifications
 
@@ -129,8 +152,8 @@ Remote services disclosure:
 1. Make sure `docs/privacy-policy.md` is available at a public URL.
 2. Confirm the Chrome Web Store developer account has 2-Step Verification enabled.
 3. Go to the Chrome Web Store Developer Dashboard.
-4. Choose Add new item.
-5. Upload `dist/qiaomu-tab-0.1.0.zip`.
+4. Choose the existing `乔木Tab` item for updates, or Add new item for the first submission.
+5. Upload `dist/qiaomu-tab-0.1.1.zip`.
 6. Fill Store Listing using the text above.
 7. Upload `assets/icon128.png`, `docs/assets/webstore-screenshot-1280x800.png`, and `docs/assets/webstore-promo-440x280.png`.
 8. Fill Privacy using the single purpose, data disclosure, and permission justifications above.

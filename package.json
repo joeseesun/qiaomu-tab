@@ -1,6 +1,6 @@
 {
   "name": "qiaomu-tab",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A calm, local-first Chrome MV3 new tab dashboard.",
   "private": true,
   "license": "MIT",
